@@ -1,6 +1,7 @@
-import subprocess
 import argparse
 import pathlib
+import multiprocessing
+import subprocess
 import i3ipc
 
 
@@ -14,6 +15,16 @@ def framePath(frame: int) -> str:
     return '%s/%d.png' % (CACHE_DIR, frame)
 
 
+def genFrame(wallpaperPath:str, frame: int) -> str:
+    # TODO: better check
+    if not pathlib.Path(framePath(frame)).is_file():
+        subprocess.run([
+            'convert', wallpaperPath, '-blur', '0x%d' % frame, framePath(frame)
+        ])
+        print('Generated frame %d' % frame)
+
+
+
 class blurWallpaper:
     def __init__(self, wallpaperPath: str, blurStrength: int, animationDuration: int) -> None:
         self.SWAY = i3ipc.Connection()
@@ -21,7 +32,7 @@ class blurWallpaper:
         self.wallpaperPath = wallpaperPath
         self.blurFrames = [(i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)]
 
-        self.genBlurredWallpaper(blurStrength)
+        self.genTransitionFrames()
         self.initOutputs()
 
         print("Listening...")
@@ -39,18 +50,13 @@ class blurWallpaper:
             self.outputStatus[output.name] = False
 
 
-    def genBlurredWallpaper(self, blurStrength: int) -> None:
-        # TODO: better check
-        # TODO: threading
-        index = 1
-        for frame in self.blurFrames:
-            if not pathlib.Path(framePath(frame)).is_file():
-                print('Generating blurred wallpaper frame %d...' % index)
-                subprocess.run([
-                    'convert', self.wallpaperPath, '-blur', '0x%d' % frame, framePath(frame)
-                ])
-                index += 1
+    def genTransitionFrames(self) -> None:
+        print('Generating blurred wallpaper frames')
+        print('This may take a minute...')
+        with multiprocessing.Pool() as pool:
+            pool.starmap(genFrame, [[self.wallpaperPath, frame] for frame in self.blurFrames])
         print('Blurred wallpaper generated')
+
 
 
     def isWorkspaceEmpty(self) -> None:
