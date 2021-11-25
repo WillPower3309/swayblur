@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import multiprocessing
+import shutil
 import subprocess
 import i3ipc
 
@@ -9,6 +10,22 @@ BLUR_MIN = 5
 BLUR_MAX = 100
 
 CACHE_DIR = pathlib.Path.home() / '.cache/swayblur'
+
+
+def invalidateCache(settingsHash: str):
+    lockFile = CACHE_DIR / 'settings.lock'
+    try:
+        with open(lockFile, 'r') as f:
+            if settingsHash == f.readline():
+                return
+    except FileNotFoundError:
+        print('Created cache directory: %s' % CACHE_DIR)
+        pass
+    print('Settings updated')
+    shutil.rmtree(CACHE_DIR, ignore_errors=True)
+    CACHE_DIR.mkdir(parents=True)
+    with open(lockFile, 'w') as f:
+        f.write(settingsHash)
 
 
 def framePath(frame: int) -> str:
@@ -92,9 +109,6 @@ class blurWallpaper:
 
 
 def main() -> None:
-    # create the cache dir if it doesn't exist
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('wallpaper_path', type=str)
@@ -114,6 +128,10 @@ def main() -> None:
     if args.animate < 1:
         print('Unable to run swayblur, animate is set to %d, which is not a positive value' % args.animate)
         return
+
+    # Invalidate settings cache
+    settingsHash = str(args.animate) + args.wallpaper_path + str(args.blur)
+    invalidateCache(settingsHash)
 
     # Run blurring script
     blurWallpaper(args.wallpaper_path, args.blur, args.animate)
