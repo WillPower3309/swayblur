@@ -52,6 +52,8 @@ class blurWallpaper:
         self.genTransitionFrames()
         self.initOutputs()
 
+        self.handleBlur(self.SWAY, i3ipc.Event.WORKSPACE_INIT)
+
         print("Listening...")
         self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleBlur)
         self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleBlur)
@@ -81,7 +83,7 @@ class blurWallpaper:
         return focused.name == focused.workspace().name
 
 
-    def handleBlur(self, _: i3ipc.Connection, event: i3ipc.Event) -> None:
+    def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
         focusedOutput = ''
 
         for output in self.SWAY.get_outputs():
