@@ -8,6 +8,9 @@ import i3ipc
 BLUR_MIN = 5
 BLUR_MAX = 100
 
+ANIMATE_MIN = 1
+ANIMATE_MAX = 20
+
 CACHE_DIR = pathlib.Path.home() / '.cache/swayblur'
 
 
@@ -15,7 +18,7 @@ def framePath(frame: int) -> str:
     return '%s/%d.png' % (CACHE_DIR, frame)
 
 
-def genFrame(wallpaperPath:str, frame: int) -> str:
+def genFrame(wallpaperPath: str, frame: int) -> None:
     # TODO: better check
     if not pathlib.Path(framePath(frame)).is_file():
         subprocess.run([
@@ -101,7 +104,7 @@ def main() -> None:
     parser.add_argument('-b', '--blur', type=int, default=20,
             help='the blur strength (default: %(default)d, min: {}, max: {})'.format(BLUR_MIN, BLUR_MAX))
     parser.add_argument('-a', '--animate', type=int, default=1,
-            help='animation duration (default: %(default)d)')
+            help='animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
     args = parser.parse_args()
 
     # Validate args
@@ -109,10 +112,13 @@ def main() -> None:
         print('Unable to run swayblur, no such file "%s"' % args.wallpaper_path)
         return
     if args.blur < BLUR_MIN or args.blur > BLUR_MAX:
-        print('Unable to run swayblur, blur is set to %d, which is not between 10-100' % args.blur)
+        print('Unable to run swayblur, blur is set to %d, which is not between %d-%d' % (args.blur, BLUR_MIN, BLUR_MAX))
         return
-    if args.animate < 1:
-        print('Unable to run swayblur, animate is set to %d, which is not a positive value' % args.animate)
+    if args.animate < ANIMATE_MIN or args.animate > ANIMATE_MAX:
+        print('Unable to run swayblur, animate is set to %d, which is not between %d-%d' % (args.animate, ANIMATE_MIN, ANIMATE_MAX))
+        return
+    if args.animate > args.blur:
+        print('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
         return
 
     # Run blurring script
