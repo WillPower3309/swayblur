@@ -1,58 +1,90 @@
 import argparse
 import pathlib
-import multiprocessing
+import filecmp
 import shutil
+import json
+import multiprocessing
 import subprocess
 import i3ipc
 
 
 BLUR_MIN = 5
 BLUR_MAX = 100
-
 ANIMATE_MIN = 1
 ANIMATE_MAX = 20
 
 CACHE_DIR = pathlib.Path.home() / '.cache/swayblur'
 
 
-def invalidateCache(settingsHash: str):
-    lockFile = CACHE_DIR / 'settings.lock'
+def parseArgs() -> bool:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('wallpaper_path', type=str)
+    parser.add_argument('-b', '--blur', type=int, default=20,
+            help='the blur strength (default: %(default)d, min: {}, max: {})'.format(BLUR_MIN, BLUR_MAX))
+    parser.add_argument('-a', '--animate', type=int, default=1,
+            help='animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
+    args = parser.parse_args()
+
+    # Validate args
+    if not pathlib.Path(args.wallpaper_path).is_file():
+        parser.error('Unable to run swayblur, no such file "%s"' % args.wallpaper_path)
+    if args.blur < BLUR_MIN or args.blur > BLUR_MAX:
+        parser.error('Unable to run swayblur, blur is set to %d, which is not between %d-%d' % (args.blur, BLUR_MIN, BLUR_MAX))
+    if args.animate < ANIMATE_MIN or args.animate > ANIMATE_MAX:
+        parser.error('Unable to run swayblur, animate is set to %d, which is not between %d-%d' % (args.animate, ANIMATE_MIN, ANIMATE_MAX))
+    if args.animate > args.blur:
+        parser.error('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
+
+    return args
+
+
+def validateCache(wallpaperPath: str, blurStrength: int, animationDuration: int) -> bool:
+    SETTINGS_FILE = CACHE_DIR / 'settings.json'
+
     try:
-        with open(lockFile, 'r') as f:
-            if settingsHash == f.readline():
-                return
+        with open(SETTINGS_FILE, 'r') as f:
+            settings = json.load(f)
+            if settings['blur'] == blurStrength and settings['animate'] == animationDuration and filecmp.cmp(settings['referenceFile'], wallpaperPath):
+                return True
     except FileNotFoundError:
-        print('Created cache directory: %s' % CACHE_DIR)
+        print('Creating cache directory: %s' % CACHE_DIR)
         pass
-    print('Settings updated')
+
     shutil.rmtree(CACHE_DIR, ignore_errors=True)
     CACHE_DIR.mkdir(parents=True)
-    with open(lockFile, 'w') as f:
-        f.write(settingsHash)
-
+    referenceFile = shutil.copy(wallpaperPath, CACHE_DIR)
+    with open(SETTINGS_FILE, 'w') as f:
+        f.write(json.dumps({
+            'referenceFile': referenceFile,
+            'blur': blurStrength,
+            'animate': animationDuration,
+        }))
+    return False
 
 def framePath(frame: int) -> str:
     return '%s/%d.png' % (CACHE_DIR, frame)
 
 
 def genFrame(wallpaperPath: str, frame: int) -> None:
-    # TODO: better check
-    if not pathlib.Path(framePath(frame)).is_file():
-        subprocess.run([
-            'convert', wallpaperPath, '-blur', '0x%d' % frame, framePath(frame)
-        ])
-        print('Generated frame %d' % frame)
+    try:
+        subprocess.run(['convert', wallpaperPath, '-blur', '0x%d' % frame, framePath(frame)])
+    except FileNotFoundError:
+        print('Could not create blurred version of wallpaper, ensure imagemagick is installed')
+        exit()
 
+    print('Generated frame %d' % frame)
 
 
 class blurWallpaper:
-    def __init__(self, wallpaperPath: str, blurStrength: int, animationDuration: int) -> None:
+    def __init__(self, wallpaperPath: str, blurStrength: int, animationDuration: int, cached: bool) -> None:
         self.SWAY = i3ipc.Connection()
         self.outputStatus = {}
         self.wallpaperPath = wallpaperPath
         self.blurFrames = [(i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)]
 
-        self.genTransitionFrames()
+        if not cached:
+            self.genTransitionFrames()
+
         self.initOutputs()
 
         self.handleBlur(self.SWAY, i3ipc.Event.WORKSPACE_INIT)
@@ -78,7 +110,6 @@ class blurWallpaper:
         with multiprocessing.Pool() as pool:
             pool.starmap(genFrame, [[self.wallpaperPath, frame] for frame in self.blurFrames])
         print('Blurred wallpaper generated')
-
 
 
     def isWorkspaceEmpty(self) -> None:
@@ -109,41 +140,22 @@ class blurWallpaper:
 
 
     def switchWallpaper(self, output: str, path: str) -> None:
-        subprocess.run(['ogurictl', 'output', output, '--image', path])
-
+        try:
+            subprocess.run(['ogurictl', 'output', output, '--image', path])
+        except:
+            print('Could not set wallpaper, ensure oguri is installed')
+            exit()
 
 
 def main() -> None:
     # Parse arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('wallpaper_path', type=str)
-    parser.add_argument('-b', '--blur', type=int, default=20,
-            help='the blur strength (default: %(default)d, min: {}, max: {})'.format(BLUR_MIN, BLUR_MAX))
-    parser.add_argument('-a', '--animate', type=int, default=1,
-            help='animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
-    args = parser.parse_args()
+    args = parseArgs()
 
-    # Validate args
-    if not pathlib.Path(args.wallpaper_path).is_file():
-        print('Unable to run swayblur, no such file "%s"' % args.wallpaper_path)
-        return
-    if args.blur < BLUR_MIN or args.blur > BLUR_MAX:
-        print('Unable to run swayblur, blur is set to %d, which is not between %d-%d' % (args.blur, BLUR_MIN, BLUR_MAX))
-        return
-    if args.animate < ANIMATE_MIN or args.animate > ANIMATE_MAX:
-        print('Unable to run swayblur, animate is set to %d, which is not between %d-%d' % (args.animate, ANIMATE_MIN, ANIMATE_MAX))
-        return
-    if args.animate > args.blur:
-        print('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
-        return
-
-    # Invalidate settings cache
-    settingsHash = str(args.animate) + args.wallpaper_path + str(args.blur)
-    invalidateCache(settingsHash)
+    # Validate cache
+    isCached = validateCache(args.wallpaper_path, args.blur, args.animate)
 
     # Run blurring script
-    blurWallpaper(args.wallpaper_path, args.blur, args.animate)
-
+    blurWallpaper(args.wallpaper_path, args.blur, args.animate, isCached)
 
 
 if __name__ == "__main__":
