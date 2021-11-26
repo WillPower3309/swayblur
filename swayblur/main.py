@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import multiprocessing
+import shutil
 import subprocess
 import i3ipc
 
@@ -12,6 +13,22 @@ ANIMATE_MIN = 1
 ANIMATE_MAX = 20
 
 CACHE_DIR = pathlib.Path.home() / '.cache/swayblur'
+
+
+def invalidateCache(settingsHash: str):
+    lockFile = CACHE_DIR / 'settings.lock'
+    try:
+        with open(lockFile, 'r') as f:
+            if settingsHash == f.readline():
+                return
+    except FileNotFoundError:
+        print('Created cache directory: %s' % CACHE_DIR)
+        pass
+    print('Settings updated')
+    shutil.rmtree(CACHE_DIR, ignore_errors=True)
+    CACHE_DIR.mkdir(parents=True)
+    with open(lockFile, 'w') as f:
+        f.write(settingsHash)
 
 
 def framePath(frame: int) -> str:
@@ -37,6 +54,8 @@ class blurWallpaper:
 
         self.genTransitionFrames()
         self.initOutputs()
+
+        self.handleBlur(self.SWAY, i3ipc.Event.WORKSPACE_INIT)
 
         print("Listening...")
         self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleBlur)
@@ -67,7 +86,7 @@ class blurWallpaper:
         return focused.name == focused.workspace().name
 
 
-    def handleBlur(self, _: i3ipc.Connection, event: i3ipc.Event) -> None:
+    def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
         focusedOutput = ''
 
         for output in self.SWAY.get_outputs():
@@ -95,9 +114,6 @@ class blurWallpaper:
 
 
 def main() -> None:
-    # create the cache dir if it doesn't exist
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('wallpaper_path', type=str)
@@ -120,6 +136,10 @@ def main() -> None:
     if args.animate > args.blur:
         print('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
         return
+
+    # Invalidate settings cache
+    settingsHash = str(args.animate) + args.wallpaper_path + str(args.blur)
+    invalidateCache(settingsHash)
 
     # Run blurring script
     blurWallpaper(args.wallpaper_path, args.blur, args.animate)
