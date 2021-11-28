@@ -78,7 +78,7 @@ class blurWallpaper:
 
         # init outputs to their defaults
         outputs = {}
-        for output in i3ipc.Connection().get_outputs():
+        for output in self.SWAY.get_outputs():
             outputs[output.name] = {
                 'image': '',
                 'filter': '',
