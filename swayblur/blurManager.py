@@ -1,4 +1,3 @@
-import configparser
 import multiprocessing
 import subprocess
 import i3ipc
@@ -17,48 +16,8 @@ def genFrame(wallpaperPath: str, output: str, frame: int) -> None:
     print('Generated frame %s' % paths.framePath(output, frame))
 
 
-# parse the oguri config
-def parseConfig(outputs: list, configPath: str) -> dict:
-    # check if config file exists
-    if not paths.exists(configPath):
-        print('Error: Oguri config file %s does not exist' % configPath)
-        exit()
-
-    config = configparser.ConfigParser()
-    config.read(configPath)
-
-    # init outputs to their defaults
-    outputSettings = {}
-    for output in outputs:
-        outputSettings[output.name] = {
-            'image': '',
-            'filter': '',
-            'anchor': '',
-            'scaling-mode': 'fill',
-            'is-blurred': False
-        }
-
-    # iterate through each output in the config
-    for section in config.sections():
-        outputName = section.split('output ')[-1]
-        outputsToUpdate = []
-
-        if outputName == '*':
-            for output in outputSettings:
-                if outputSettings[output]['image'] == '':
-                    outputsToUpdate.append(output)
-        else:
-            outputsToUpdate.append(outputName)
-
-        for output in outputsToUpdate:
-            for key in config[section]:
-                outputSettings[output][key] = config[section][key]
-
-        return outputSettings
-
-
 class BlurManager:
-    def __init__(self, configPath: str, blurStrength: int, animationDuration: int) -> None:
+    def __init__(self, outputConfigs: dict, blurStrength: int, animationDuration: int) -> None:
         self.SWAY = i3ipc.Connection()
         self.outputsMap = {}
         self.outputs = []
@@ -67,7 +26,6 @@ class BlurManager:
             (i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)
         ]
 
-        outputConfigs = parseConfig(self.SWAY.get_outputs(), configPath)
         i = 0
         for name in outputConfigs:
             outputCfg = outputConfigs[name]

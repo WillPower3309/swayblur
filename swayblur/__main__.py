@@ -1,4 +1,6 @@
 import argparse
+import configparser
+import i3ipc
 
 import paths
 from blurManager import BlurManager
@@ -32,6 +34,41 @@ def parseArgs() -> bool:
     return args
 
 
+# parse the oguri config
+def parseConfig(configPath: str) -> dict:
+    config = configparser.ConfigParser()
+    config.read(configPath)
+
+    # init outputs to their defaults
+    outputSettings = {}
+    for output in i3ipc.Connection().get_outputs():
+        outputSettings[output.name] = {
+            'image': '',
+            'filter': '',
+            'anchor': '',
+            'scaling-mode': 'fill',
+            'is-blurred': False
+        }
+
+    # iterate through each output in the config
+    for section in config.sections():
+        outputName = section.split('output ')[-1]
+        outputsToUpdate = []
+
+        if outputName == '*':
+            for output in outputSettings:
+                if outputSettings[output]['image'] == '':
+                    outputsToUpdate.append(output)
+        else:
+            outputsToUpdate.append(outputName)
+
+        for output in outputsToUpdate:
+            for key in config[section]:
+                outputSettings[output][key] = config[section][key]
+
+        return outputSettings
+
+
 def main() -> None:
     # parse arguments
     args = parseArgs()
@@ -39,8 +76,14 @@ def main() -> None:
     # create the cache dir if it doesn't exist
     paths.createCache()
 
+    # parse oguri config
+    if not paths.exists(args.config_path):
+        print('Unable to run swayblur, oguri config %s not found' % (args.config_path))
+        exit()
+    outputConfigs = parseConfig(args.config_path)
+
     # blur the wallpaper
-    blurManager = BlurManager(args.config_path, args.blur, args.animate)
+    blurManager = BlurManager(outputConfigs, args.blur, args.animate)
     blurManager.start()
 
 
