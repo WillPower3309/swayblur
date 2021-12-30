@@ -19,36 +19,31 @@ def genFrame(wallpaperPath: str, output: str, frame: int) -> None:
 class BlurManager:
     def __init__(self, outputConfigs: dict, blurStrength: int, animationDuration: int) -> None:
         self.SWAY = i3ipc.Connection()
-        self.outputsMap = {}
-        self.outputs = []
+        self.outputs = {}
 
         animationFrames = [
             (i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)
         ]
 
-        i = 0
         for name in outputConfigs:
             outputCfg = outputConfigs[name]
-            self.outputs.append(
-                Output(
-                    name,
-                    outputCfg['image'],
-                    [paths.framePath(name, frame) for frame in animationFrames],
-                    {
-                        'filter': outputCfg['filter'] ,
-                        'anchor': outputCfg['anchor'],
-                        'scaling-mode': outputCfg['scaling-mode'],
-                    }
-                )
+            self.outputs[name] = Output(
+                name,
+                outputCfg['image'],
+                [paths.framePath(name, frame) for frame in animationFrames],
+                {
+                    'filter': outputCfg['filter'] ,
+                    'anchor': outputCfg['anchor'],
+                    'scaling-mode': outputCfg['scaling-mode'],
+                }
             )
-            self.outputsMap[name] = i
-            i += 1
 
         # TODO: add back cache validation, optimize me to not rely on output
         if True:
             print('Generating blurred wallpaper frames')
             print('This may take a minute...')
-            for output in self.outputs:
+            for outputName in self.outputs:
+                output = self.outputs[outputName]
                 with multiprocessing.Pool() as pool:
                     pool.starmap(genFrame, [[output.wallpaper, output.name, frame] for frame in animationFrames])
             print('Blurred wallpaper generated')
@@ -65,15 +60,6 @@ class BlurManager:
         self.SWAY.main()
 
 
-    def isWorkspaceEmpty(self) -> None:
-        focused = self.SWAY.get_tree().find_focused()
-        return focused.name == focused.workspace().name
-
-
-    def getOutput(self, name: str) -> str:
-        return self.outputs[self.outputsMap[name]]
-
-
     def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
         # get focused output
         focusedOutput = ''
@@ -82,7 +68,9 @@ class BlurManager:
                 focusedOutput = output.name
                 break
 
-        if self.isWorkspaceEmpty():
-            self.getOutput(focusedOutput).blur()
-        elif not self.isWorkspaceEmpty():
-            self.getOutput(focusedOutput).unblur()
+        # check if the focused workspace is empty and blur or unblur accordingly
+        focusedWindow = self.SWAY.get_tree().find_focused()
+        if focusedWindow.name == focusedWindow.workspace().name: # if empty
+            self.outputs[focusedOutput].blur()
+        else:
+            self.outputs[focusedOutput].unblur()
