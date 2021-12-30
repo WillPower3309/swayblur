@@ -6,14 +6,13 @@ import paths
 from blurManager import BlurManager
 
 
-BLUR_MIN = 5
-BLUR_MAX = 100
-ANIMATE_MIN = 1
-ANIMATE_MAX = 20
-
-
 # parse and validate the arguments
 def parseArgs() -> bool:
+    BLUR_MIN = 5
+    BLUR_MAX = 100
+    ANIMATE_MIN = 1
+    ANIMATE_MAX = 20
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--blur', type=int, default=20,
             help='The blur strength (default: %(default)d, min: {}, max: {})'.format(BLUR_MIN, BLUR_MAX))
@@ -30,6 +29,8 @@ def parseArgs() -> bool:
         parser.error('Unable to run swayblur, animate is set to %d, which is not between %d-%d' % (args.animate, ANIMATE_MIN, ANIMATE_MAX))
     if args.animate > args.blur:
         parser.error('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
+    if not paths.exists(args.config_path):
+        parser.error('Unable to run swayblur, oguri config %s not found' % (args.config_path))
 
     return args
 
@@ -72,15 +73,11 @@ def parseConfig(configPath: str) -> dict:
 def main() -> None:
     # parse arguments
     args = parseArgs()
+    # parse oguri config
+    outputConfigs = parseConfig(args.config_path)
 
     # create the cache dir if it doesn't exist
     paths.createCache()
-
-    # parse oguri config
-    if not paths.exists(args.config_path):
-        print('Unable to run swayblur, oguri config %s not found' % (args.config_path))
-        exit()
-    outputConfigs = parseConfig(args.config_path)
 
     # blur the wallpaper
     blurManager = BlurManager(outputConfigs, args.blur, args.animate)
