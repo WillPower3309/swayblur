@@ -1,19 +1,54 @@
 import multiprocessing
 import subprocess
+import json
+import filecmp
+import shutil
+import hashlib
 import i3ipc
 
 import paths
 from output import Output
 
 
-def genFrame(wallpaperPath: str, output: str, frame: int) -> None:
+def genBlurredImage(inputPath: str, outputPath: str, blurLevel: int) -> None:
     try:
-        subprocess.run(['convert', wallpaperPath, '-blur', '0x%d' % frame, paths.framePath(output, frame)])
+        subprocess.run(['convert', inputPath, '-blur', '0x%d' % blurLevel, outputPath])
     except FileNotFoundError:
         print('Could not create blurred version of wallpaper, ensure imagemagick is installed')
         exit()
 
-    print('Generated frame %s' % paths.framePath(output, frame))
+    print('Generated image %s' % outputPath)
+
+
+def verifySettingsCache(blurStrength: int, animationDuration: int) -> None:
+    try:
+        with open(paths.CACHE_VALIDATION_FILE, 'r') as f:
+            settings = json.load(f)
+            if settings['blur'] == blurStrength and settings['animate'] == animationDuration:
+                return
+    except FileNotFoundError:
+        pass
+
+    # new settings, clear & recreate cache
+    paths.deleteCache()
+    paths.createCache()
+
+    with open(paths.CACHE_VALIDATION_FILE, 'w') as f:
+        f.write(json.dumps({
+            'blur': blurStrength,
+            'animate': animationDuration,
+        }))
+    return
+
+
+def verifyWallpaperCache(wallpaperPath: str, wallpaperHash: str) -> bool:
+    cachedWallpaper = paths.cachedImagePath(wallpaperPath, wallpaperHash)
+
+    if paths.exists(cachedWallpaper) and filecmp.cmp(wallpaperPath, cachedWallpaper):
+        return True
+
+    shutil.copy(wallpaperPath, cachedWallpaper)
+    return False
 
 
 class BlurManager:
@@ -25,12 +60,19 @@ class BlurManager:
             (i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)
         ]
 
+        # clear cache if the blurStrength / animationDuration have been changed since last run
+        verifySettingsCache(blurStrength, animationDuration)
+
+        # create an output object for each output in the configuration
         for name in outputConfigs:
             outputCfg = outputConfigs[name]
+            imageHash = hashlib.md5(outputCfg['image'].encode()).hexdigest()
+            cachedImage = paths.cachedImagePath(outputCfg['image'], imageHash)
+
             self.outputs[name] = Output(
                 name,
-                outputCfg['image'],
-                [paths.framePath(name, frame) for frame in animationFrames],
+                cachedImage,
+                [paths.framePath(imageHash, frame) for frame in animationFrames],
                 {
                     'filter': outputCfg['filter'] ,
                     'anchor': outputCfg['anchor'],
@@ -38,20 +80,21 @@ class BlurManager:
                 }
             )
 
-        # TODO: add back cache validation, optimize me to not rely on output
-        if True:
-            print('Generating blurred wallpaper frames')
-            print('This may take a minute...')
-            for outputName in self.outputs:
-                output = self.outputs[outputName]
+            # check if new wallpaper must be generated
+            if not verifyWallpaperCache(outputCfg['image'], imageHash):
+                print('Generating blurred wallpaper frames')
+                print('This may take a minute...')
                 with multiprocessing.Pool() as pool:
-                    pool.starmap(genFrame, [[output.wallpaper, output.name, frame] for frame in animationFrames])
-            print('Blurred wallpaper generated')
+                    pool.starmap(
+                        genBlurredImage,
+                        [[cachedImage, paths.framePath(imageHash, frame), frame] for frame in animationFrames]
+                    )
+                print('Blurred wallpaper generated for %s' % name)
+            else:
+                print('Blurred wallpaper exists for %s' % name)
 
 
     def start(self) -> None:
-        self.handleBlur(self.SWAY, i3ipc.Event.WORKSPACE_INIT)
-
         print("Listening...")
         self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleBlur)
         self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleBlur)
@@ -62,6 +105,7 @@ class BlurManager:
 
     def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
         # get focused output
+        # TODO: there's got to be a faster way to do this
         focusedOutput = ''
         for output in self.SWAY.get_outputs():
             if output.focused:

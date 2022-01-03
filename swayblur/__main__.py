@@ -50,7 +50,7 @@ def parseConfig(configPath: str) -> dict:
             'scaling-mode': 'fill',
             'is-blurred': False
         }
-
+    
     # iterate through each output in the config
     for section in config.sections():
         outputName = section.split('output ')[-1]
@@ -67,7 +67,7 @@ def parseConfig(configPath: str) -> dict:
             for key in config[section]:
                 outputSettings[output][key] = config[section][key]
 
-        return outputSettings
+    return outputSettings
 
 
 def main() -> None:
@@ -75,9 +75,6 @@ def main() -> None:
     args = parseArgs()
     # parse oguri config
     outputConfigs = parseConfig(args.config_path)
-
-    # create the cache dir if it doesn't exist
-    paths.createCache()
 
     # blur the wallpaper
     blurManager = BlurManager(outputConfigs, args.blur, args.animate)
