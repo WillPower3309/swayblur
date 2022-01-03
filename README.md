@@ -7,7 +7,7 @@ Basic i3ipc based script to blur an output's wallpaper when a client is present 
 + `oguri`: used to set the wallpaper [without displaying a gray screen for a split second](https://github.com/swaywm/sway/issues/3693))
 
 ## Usage
-`swayblur [-h] [-b BLUR] [-a ANIMATE]`
+`swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH]`
 
 | Option | Description |
 | ------ | ----------- |
@@ -28,4 +28,3 @@ filter=nearest
 scaling-mode=fill
 anchor=center
 ```
-
