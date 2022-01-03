@@ -1,5 +1,6 @@
 import argparse
 import configparser
+import json
 import i3ipc
 
 import paths
@@ -50,7 +51,7 @@ def parseConfig(configPath: str) -> dict:
             'scaling-mode': 'fill',
             'is-blurred': False
         }
-    
+
     # iterate through each output in the config
     for section in config.sections():
         outputName = section.split('output ')[-1]
@@ -70,11 +71,35 @@ def parseConfig(configPath: str) -> dict:
     return outputSettings
 
 
+def verifySettingsCache(blurStrength: int, animationDuration: int) -> None:
+    try:
+        with open(paths.CACHE_VALIDATION_FILE, 'r') as f:
+            settings = json.load(f)
+            if settings['blur'] == blurStrength and settings['animate'] == animationDuration:
+                return
+    except FileNotFoundError:
+        pass
+
+    # new settings, clear & recreate cache
+    paths.deleteCache()
+    paths.createCache()
+
+    with open(paths.CACHE_VALIDATION_FILE, 'w') as f:
+        f.write(json.dumps({
+            'blur': blurStrength,
+            'animate': animationDuration,
+        }))
+    return
+
+
 def main() -> None:
     # parse arguments
     args = parseArgs()
     # parse oguri config
     outputConfigs = parseConfig(args.config_path)
+
+    # clear cache if the blurStrength / animationDuration have been changed since last run
+    verifySettingsCache(args.blur, args.animate)
 
     # blur the wallpaper
     blurManager = BlurManager(outputConfigs, args.blur, args.animate)

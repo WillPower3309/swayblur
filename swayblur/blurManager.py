@@ -1,6 +1,5 @@
 import multiprocessing
 import subprocess
-import json
 import filecmp
 import shutil
 import hashlib
@@ -18,27 +17,6 @@ def genBlurredImage(inputPath: str, outputPath: str, blurLevel: int) -> None:
         exit()
 
     print('Generated image %s' % outputPath)
-
-
-def verifySettingsCache(blurStrength: int, animationDuration: int) -> None:
-    try:
-        with open(paths.CACHE_VALIDATION_FILE, 'r') as f:
-            settings = json.load(f)
-            if settings['blur'] == blurStrength and settings['animate'] == animationDuration:
-                return
-    except FileNotFoundError:
-        pass
-
-    # new settings, clear & recreate cache
-    paths.deleteCache()
-    paths.createCache()
-
-    with open(paths.CACHE_VALIDATION_FILE, 'w') as f:
-        f.write(json.dumps({
-            'blur': blurStrength,
-            'animate': animationDuration,
-        }))
-    return
 
 
 def verifyWallpaperCache(wallpaperPath: str, wallpaperHash: str) -> bool:
@@ -59,9 +37,6 @@ class BlurManager:
         animationFrames = [
             (i + 1) * (blurStrength // animationDuration) for i in range(animationDuration)
         ]
-
-        # clear cache if the blurStrength / animationDuration have been changed since last run
-        verifySettingsCache(blurStrength, animationDuration)
 
         # create an output object for each output in the configuration
         for name in outputConfigs:
