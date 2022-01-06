@@ -16,7 +16,7 @@ class Output:
 
     def unblur(self) -> None:
         if self.isBlurred:
-            for framePath in reversed(self.blurFrames[:-1]):
+            for framePath in self.blurFrames[:0:-1]:
                 self.switchWallpaper(framePath)
             self.switchWallpaper(self.wallpaper)
             self.isBlurred = False
