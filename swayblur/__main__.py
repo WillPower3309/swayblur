@@ -1,6 +1,7 @@
 import argparse
 import configparser
 import json
+import logging
 import i3ipc
 
 import paths
@@ -21,6 +22,8 @@ def parseArgs() -> bool:
             help='Animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
     parser.add_argument('-c', '--config-path', type=str, default=paths.DEFAULT_OGURI_DIR,
             help='Path to the oguri configuration file to use (default: %(default)s)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+            help='Prints additional information')
     args = parser.parse_args()
 
     # Validate args
@@ -81,6 +84,7 @@ def verifySettingsCache(blurStrength: int, animationDuration: int) -> None:
         pass
 
     # new settings, clear & recreate cache
+    logging.info('New swayblur settings found, recreating cache...')
     paths.deleteCache()
     paths.createCache()
 
@@ -92,9 +96,21 @@ def verifySettingsCache(blurStrength: int, animationDuration: int) -> None:
     return
 
 
+def configureLogger() -> None:
+    logging.basicConfig(format='[%(levelname)s\033[0m] %(message)s')
+    logging.addLevelName(logging.INFO, '\033[1;34mI')
+    logging.addLevelName(logging.ERROR, '\033[1;31mE')
+
+
 def main() -> None:
     # parse arguments
     args = parseArgs()
+
+    # setup logger
+    configureLogger()
+    if args.verbose:
+        logging.getLogger().setLevel(logging.INFO)
+
     # parse oguri config
     outputConfigs = parseConfig(args.config_path)
 

@@ -3,6 +3,7 @@ import subprocess
 import filecmp
 import shutil
 import hashlib
+import logging
 import i3ipc
 
 import paths
@@ -13,18 +14,20 @@ def genBlurredImage(inputPath: str, outputPath: str, blurLevel: int) -> None:
     try:
         subprocess.run(['convert', inputPath, '-blur', '0x%d' % blurLevel, outputPath])
     except FileNotFoundError:
-        print('Could not create blurred version of wallpaper, ensure imagemagick is installed')
+        logging.error('Could not create blurred version of wallpaper, ensure imagemagick is installed')
         exit()
 
-    print('Generated image %s' % outputPath)
+    logging.info('Generated image %s' % outputPath)
 
 
 def verifyWallpaperCache(wallpaperPath: str, wallpaperHash: str) -> bool:
     cachedWallpaper = paths.cachedImagePath(wallpaperPath, wallpaperHash)
 
     if paths.exists(cachedWallpaper) and filecmp.cmp(wallpaperPath, cachedWallpaper):
+        logging.info('wallpaper %s is cached as %s' % (wallpaperPath, cachedWallpaper))
         return True
 
+    logging.info('wallpaper %s added to the cache as %s' % (wallpaperPath, cachedWallpaper))
     shutil.copy(wallpaperPath, cachedWallpaper)
     return False
 
@@ -41,6 +44,11 @@ class BlurManager:
         # create an output object for each output in the configuration
         for name in outputConfigs:
             outputCfg = outputConfigs[name]
+            # if output has no wallpaper set, no object needs to be made
+            if not outputCfg['image']:
+                logging.info('Output %s has no wallpaper set' % name)
+                continue
+
             imageHash = hashlib.md5(outputCfg['image'].encode()).hexdigest()
             cachedImage = paths.cachedImagePath(outputCfg['image'], imageHash)
 
@@ -81,15 +89,19 @@ class BlurManager:
     def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
         # get focused output
         # TODO: there's got to be a faster way to do this
-        focusedOutput = ''
+        focusedOutput = None
         for output in self.SWAY.get_outputs():
             if output.focused:
-                focusedOutput = output.name
+                try:
+                    focusedOutput = self.outputs[output.name]
+                except KeyError: # output does not have wallpaper set
+                    return
                 break
 
-        # check if the focused workspace is empty and blur or unblur accordingly
-        focusedWindow = self.SWAY.get_tree().find_focused()
-        if focusedWindow.name == focusedWindow.workspace().name: # if empty
-            self.outputs[focusedOutput].unblur()
-        else:
-            self.outputs[focusedOutput].blur()
+        if focusedOutput:
+            # check if the focused workspace is empty and blur or unblur accordingly
+            focusedWindow = self.SWAY.get_tree().find_focused()
+            if focusedWindow.name == focusedWindow.workspace().name: # if empty
+                focusedOutput.unblur()
+            else:
+                focusedOutput.blur()

@@ -1,4 +1,5 @@
 import subprocess
+import logging
 
 class Output:
     def __init__(self, name: str, wallpaper: str, blurFrames: list, settings: dict) -> None:
@@ -31,6 +32,7 @@ class Output:
                 '--anchor', self.settings['anchor'],
                 '--scaling-mode', self.settings['scaling-mode']
             ])
+            logging.info('Changed output %s wallpaper to %s' % (self.name, path))
         except:
-            print('Could not set wallpaper, ensure oguri is installed')
+            logging.error('Could not set wallpaper, ensure oguri is installed')
             exit()
