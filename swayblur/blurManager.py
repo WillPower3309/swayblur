@@ -90,6 +90,6 @@ class BlurManager:
         # check if the focused workspace is empty and blur or unblur accordingly
         focusedWindow = self.SWAY.get_tree().find_focused()
         if focusedWindow.name == focusedWindow.workspace().name: # if empty
-            self.outputs[focusedOutput].blur()
-        else:
             self.outputs[focusedOutput].unblur()
+        else:
+            self.outputs[focusedOutput].blur()
