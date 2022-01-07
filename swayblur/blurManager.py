@@ -79,20 +79,42 @@ class BlurManager:
 
     def start(self) -> None:
         print("Listening...")
-        self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleBlur)
-        self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleBlur)
-        self.SWAY.on(i3ipc.Event.WINDOW_MOVE, self.handleBlur)
-        self.SWAY.on(i3ipc.Event.WORKSPACE_FOCUS, self.handleBlur)
+        self.SWAY.on(i3ipc.Event.WINDOW_MOVE, self.handleMove)
+        self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleOther)
+        self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleOther)
+        self.SWAY.on(i3ipc.Event.WORKSPACE_FOCUS, self.handleOther)
         self.SWAY.main()
 
 
-    def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
-        focusedWindow = self.SWAY.get_tree().find_focused()
-        focusedWorkspace = focusedWindow.workspace()
-        focusedOutputName = focusedWorkspace.ipc_data['output']
+    def handleMove(self, _sway: i3ipc.Connection, event: i3ipc.Event) -> None:
+        container = self.SWAY.get_tree().find_by_id(event.ipc_data['container']['id'])
+        containerOutput = container.workspace().ipc_data['output']
+
+        focusedContainer = self.SWAY.get_tree().find_focused()
+        focusedOutput = focusedContainer.workspace().ipc_data['output']
+
+        # window moved to a workspace on a different output
+        if container != focusedContainer:
+            try:
+                self.outputs[containerOutput].blur()
+                if focusedContainer == focusedContainer.workspace():
+                    self.outputs[focusedOutput].unblur()
+            except KeyError:
+                pass
+        # window moved to a new workspace on same output
+        elif container == container.workspace(): # if workspace is empty
+            try:
+                self.outputs[containerOutput].unblur()
+            except KeyError:
+                pass
+
+
+    def handleOther(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
+        focusedContainer = self.SWAY.get_tree().find_focused()
+        focusedOutputName = focusedContainer.workspace().ipc_data['output']
 
         try:
-            if focusedWindow == focusedWorkspace: # if workspace is empty
+            if focusedContainer == focusedContainer.workspace(): # if workspace is empty
                 self.outputs[focusedOutputName].unblur()
             else:
                 self.outputs[focusedOutputName].blur()
