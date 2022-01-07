@@ -23,16 +23,17 @@ class Output:
             self.isBlurred = False
 
     def switchWallpaper(self, path: str) -> None:
-        try:
-            subprocess.run([
-                'ogurictl',
-                'output', self.name,
-                '--image', path,
-                '--filter', self.settings['filter'],
-                '--anchor', self.settings['anchor'],
-                '--scaling-mode', self.settings['scaling-mode']
-            ])
-            logging.info('Changed output %s wallpaper to %s' % (self.name, path))
-        except:
-            logging.error('Could not set wallpaper, ensure oguri is installed')
-            exit()
+        if self.wallpaper: # not all outputs have wallpaper
+            try:
+                subprocess.run([
+                    'ogurictl',
+                    'output', self.name,
+                    '--image', path,
+                    '--filter', self.settings['filter'],
+                    '--anchor', self.settings['anchor'],
+                    '--scaling-mode', self.settings['scaling-mode']
+                ])
+                logging.info('Changed output %s wallpaper to %s' % (self.name, path))
+            except:
+                logging.error('Could not set wallpaper, ensure oguri is installed')
+                exit()
