@@ -87,21 +87,15 @@ class BlurManager:
 
 
     def handleBlur(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
-        # get focused output
-        # TODO: there's got to be a faster way to do this
-        focusedOutput = None
-        for output in self.SWAY.get_outputs():
-            if output.focused:
-                try:
-                    focusedOutput = self.outputs[output.name]
-                except KeyError: # output does not have wallpaper set
-                    return
-                break
+        focusedWindow = self.SWAY.get_tree().find_focused()
+        focusedWorkspace = focusedWindow.workspace()
+        focusedOutputName = focusedWorkspace.ipc_data['output']
 
-        if focusedOutput:
-            # check if the focused workspace is empty and blur or unblur accordingly
-            focusedWindow = self.SWAY.get_tree().find_focused()
-            if focusedWindow.name == focusedWindow.workspace().name: # if empty
-                focusedOutput.unblur()
+        try:
+            if focusedWindow == focusedWorkspace: # if workspace is empty
+                self.outputs[focusedOutputName].unblur()
             else:
-                focusedOutput.blur()
+                self.outputs[focusedOutputName].blur()
+        except KeyError:
+            logging.info('Output %s is not an Output object' % focusedOutputName)
+            pass
