@@ -6,8 +6,8 @@ import hashlib
 import logging
 import i3ipc
 
-import paths
-from output import Output
+from swayblur import paths
+from swayblur.output import Output
 
 
 def genBlurredImage(inputPath: str, outputPath: str, blurLevel: int) -> None:

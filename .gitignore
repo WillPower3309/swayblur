@@ -1,2 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+
+# build / dist
+/swayblur.egg-info/
+/build/
+/dist/
+/.eggs/

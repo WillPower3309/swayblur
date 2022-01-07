@@ -4,8 +4,8 @@ import json
 import logging
 import i3ipc
 
-import paths
-from blurManager import BlurManager
+from swayblur import paths
+from swayblur.blurManager import BlurManager
 
 
 # parse and validate the arguments
