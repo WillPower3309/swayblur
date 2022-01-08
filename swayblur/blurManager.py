@@ -79,6 +79,11 @@ class BlurManager:
 
 
     def start(self) -> None:
+        # initially blur populated workspaces
+        for workspace in self.SWAY.get_workspaces():
+            if workspace.visible and workspace.ipc_data['focus']:
+                    self.outputs[workspace.ipc_data['output']].blur()
+
         print("Listening...")
         self.SWAY.on(i3ipc.Event.WINDOW_MOVE, self.handleMove)
         self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleNew)
