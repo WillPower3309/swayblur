@@ -30,7 +30,11 @@ pip install --user .
 + `oguri`: used to set the wallpaper [without displaying a gray screen for a split second](https://github.com/swaywm/sway/issues/3693)
 
 ## Usage
-`swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH]`
+**In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
+
+**swayblur does not spawn oguri at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec oguri` occurs before swayblur is executed!
+
+`swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH] [-v VERBOSE]`
 
 | Option | Description |
 | ------ | ----------- |
@@ -39,8 +43,6 @@ pip install --user .
 | `-c`, `--config-path` | oguri config path (default: $XDG\_CONFIG\_HOME/oguri/config) |
 | `-v`, `--verbose`     | prints additional information                                |
 | `-h`, `--help`        | show the help message and exit                               |
-
-**In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
 
 ## Configuration
 Since swayblur requires `oguri`, it reads its config file: `~/.config/oguri/config`. I personally use the below config, it's about as minimal as you can get:
