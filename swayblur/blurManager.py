@@ -81,13 +81,13 @@ class BlurManager:
     def start(self) -> None:
         print("Listening...")
         self.SWAY.on(i3ipc.Event.WINDOW_MOVE, self.handleMove)
-        self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleOther)
-        self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleOther)
-        self.SWAY.on(i3ipc.Event.WORKSPACE_FOCUS, self.handleOther)
+        self.SWAY.on(i3ipc.Event.WINDOW_NEW, self.handleNew)
+        self.SWAY.on(i3ipc.Event.WINDOW_CLOSE, self.handleClose)
+        self.SWAY.on(i3ipc.Event.WORKSPACE_FOCUS, self.handleFocus)
         self.SWAY.main()
 
 
-    def handleMove(self, _sway: i3ipc.Connection, event: i3ipc.Event) -> None:
+    def handleMove(self, _: i3ipc.Connection, event: i3ipc.Event) -> None:
         container = self.SWAY.get_tree().find_by_id(event.ipc_data['container']['id'])
         containerOutput = container.workspace().ipc_data['output']
 
@@ -104,11 +104,26 @@ class BlurManager:
             self.outputs[containerOutput].unblur()
 
 
-    def handleOther(self, _sway: i3ipc.Connection, _event: i3ipc.Event) -> None:
-        focusedContainer = self.SWAY.get_tree().find_focused()
-        focusedOutputName = focusedContainer.workspace().ipc_data['output']
+    def handleNew(self, _: i3ipc.Connection, event: i3ipc.Event) -> None:
+        container = self.SWAY.get_tree().find_by_id(event.ipc_data['container']['id'])
+        workspace = container.workspace()
 
-        if focusedContainer == focusedContainer.workspace(): # if workspace is empty
-            self.outputs[focusedOutputName].unblur()
+        self.outputs[workspace.ipc_data['output']].blur()
+
+
+    def handleClose(self, _: i3ipc.Connection, _event: i3ipc.Event) -> None:
+        container = self.SWAY.get_tree().find_focused()
+        workspace = container.workspace()
+
+        if container == workspace: # if workspace is empty
+            self.outputs[workspace.ipc_data['output']].unblur()
+
+
+    def handleFocus(self, _: i3ipc.Connection, _event: i3ipc.Event) -> None:
+        container = self.SWAY.get_tree().find_focused()
+        workspace = container.workspace()
+
+        if container == workspace: # if workspace is empty
+            self.outputs[workspace.ipc_data['output']].unblur()
         else:
-            self.outputs[focusedOutputName].blur()
+            self.outputs[workspace.ipc_data['output']].blur()

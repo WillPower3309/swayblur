@@ -1,30 +1,33 @@
 # swayblur
-Basic i3ipc based script to blur an output's wallpaper when a client is present in it.
 
 <div align="center">
   <img src="https://github.com/WillPower3309/swayblur/blob/main/image.jpg?raw=true" />
 </div>
 
-## Installation
+> Basic i3ipc based script to blur an output's wallpaper when a client is present in it.
+> Available via [pypi](https://pypi.org/project/swayblur/) or the [NUR](https://nur.nix-community.org/repos/willpower3309/).
 
-### Dependencies
-+ `python-i3ipc`
-+ `ImageMagick`: Used to generate the blurred wallpaper
-+ `oguri`: used to set the wallpaper [without displaying a gray screen for a split second](https://github.com/swaywm/sway/issues/3693)
+## Installation
 
 ### Stable Release
 
+Swayblur is available in the [NUR](https://nur.nix-community.org/repos/willpower3309/) or from [pypi](https://pypi.org/project/swayblur/):
 ```sh
 pip install --user swayblur
 ```
 
-### Development Release
+### Building from Source
 
 ```sh
 git clone https://github.com/willpower3309/swayblur
 cd swayblur
 pip install --user .
 ```
+
+### Dependencies
++ `python-i3ipc`: build dependency for communicating with Sway
++ `ImageMagick`: used to generate the blurred wallpaper
++ `oguri`: used to set the wallpaper [without displaying a gray screen for a split second](https://github.com/swaywm/sway/issues/3693)
 
 ## Usage
 `swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH]`
