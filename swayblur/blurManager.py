@@ -9,7 +9,6 @@ import i3ipc
 from swayblur import paths
 from swayblur.output import Output
 
-
 def genBlurredImage(inputPath: str, outputPath: str, blurLevel: int) -> None:
     try:
         subprocess.run(['convert', inputPath, '-blur', '0x%d' % blurLevel, outputPath])
@@ -94,15 +93,25 @@ class BlurManager:
 
     def handleMove(self, _: i3ipc.Connection, event: i3ipc.Event) -> None:
         container = self.SWAY.get_tree().find_by_id(event.ipc_data['container']['id'])
-        containerOutput = container.workspace().ipc_data['output']
-
+        containerOutput = ''
         focusedContainer = self.SWAY.get_tree().find_focused()
         focusedOutput = focusedContainer.workspace().ipc_data['output']
+
+        try:
+            containerOutput = container.workspace().ipc_data['output']
+        except KeyError: # case when moved to scratchpad, deal with focused output
+            if focusedContainer == focusedContainer.workspace(): # if workspace empty
+                self.outputs[focusedOutput].unblur()
+            return
+        except AttributeError: # case where a previously scratchpadded window is closed
+            # it doesn't make sense that closing a previously scratchpadded window
+            # would be a WINDOW_MOVE event to me either, but it is what it is
+            return
 
         # window moved to a workspace on a different output
         if container != focusedContainer:
             self.outputs[containerOutput].blur()
-            if focusedContainer == focusedContainer.workspace():
+            if focusedContainer == focusedContainer.workspace(): # if workspace empty
                 self.outputs[focusedOutput].unblur()
         # window moved to a new workspace on same output
         elif container == container.workspace(): # if workspace is empty

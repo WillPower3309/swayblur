@@ -32,16 +32,17 @@ pip install --user .
 ## Usage
 **In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
 
-**swayblur does not spawn oguri at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec oguri` occurs before swayblur is executed!
+**swayblur does not spawn oguri at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec oguri` occurs before swayblur is executed!**
 
-`swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH] [-v VERBOSE]`
+`swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH] [-v] [--verbose]`
 
 | Option | Description |
 | ------ | ----------- |
 | `-b`, `--blur`        | blur strength (default: 20, min: 5, max: 100)                |
 | `-a`, `--animate`     | animation duration (default: 1, min: 1, max: 20)             |
 | `-c`, `--config-path` | oguri config path (default: $XDG\_CONFIG\_HOME/oguri/config) |
-| `-v`, `--verbose`     | prints additional information                                |
+|       `--verbose`     | prints additional information                                |
+| `-v`, `--version`     | show program's version number and exit                       |
 | `-h`, `--help`        | show the help message and exit                               |
 
 ## Configuration

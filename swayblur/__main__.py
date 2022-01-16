@@ -4,6 +4,7 @@ import json
 import logging
 import i3ipc
 
+from swayblur.__about__ import __version__
 from swayblur import paths
 from swayblur.blurManager import BlurManager
 
@@ -22,7 +23,9 @@ def parseArgs() -> bool:
             help='Animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
     parser.add_argument('-c', '--config-path', type=str, default=paths.DEFAULT_OGURI_DIR,
             help='Path to the oguri configuration file to use (default: %(default)s)')
-    parser.add_argument('-v', '--verbose', action='store_true',
+    parser.add_argument('-v', '--version', action='version',
+            version=f'%(prog)s {__version__}')
+    parser.add_argument('--verbose', action='store_true',
             help='Prints additional information')
     args = parser.parse_args()
 
