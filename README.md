@@ -5,13 +5,13 @@
 </div>
 
 > Basic i3ipc based script to blur an output's wallpaper when a client is present in it.
-> Available via [pypi](https://pypi.org/project/swayblur/) or the [NUR](https://nur.nix-community.org/repos/willpower3309/).
+> Available via [pypi](https://pypi.org/project/swayblur/), the [AUR](https://aur.archlinux.org/packages/swayblur/), or the [NUR](https://nur.nix-community.org/repos/willpower3309/).
 
 ## Installation
 
 ### Stable Release
 
-Swayblur is available in the [NUR](https://nur.nix-community.org/repos/willpower3309/) or from [pypi](https://pypi.org/project/swayblur/):
+Swayblur is available in the [AUR](https://aur.archlinux.org/packages/swayblur/), [NUR](https://nur.nix-community.org/repos/willpower3309/) or from [pypi](https://pypi.org/project/swayblur/):
 ```sh
 pip install --user swayblur
 ```
