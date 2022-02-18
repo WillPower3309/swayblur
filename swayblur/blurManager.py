@@ -4,6 +4,7 @@ import filecmp
 import shutil
 import hashlib
 import logging
+import os.path
 import i3ipc
 
 from swayblur import paths
@@ -43,7 +44,9 @@ class BlurManager:
         # create an output object for each output in the configuration
         for name in outputConfigs:
             outputCfg = outputConfigs[name]
-            outputWallpaper = outputCfg['image']
+            outputWallpaper = os.path.expanduser(
+                os.path.expandvars(outputCfg['image'])
+            )
 
             if not outputWallpaper: # if output has no wallpaper
                 self.outputs[name] = Output(name, '', [], {})
