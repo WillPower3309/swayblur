@@ -6,8 +6,10 @@ class Output:
         self.name = name
         self.wallpaper = wallpaper
         self.blurFrames = blurFrames
-        self.settings = settings
         self.isBlurred = False
+
+        settings.pop('image')
+        self.opts = [elt for item in settings.items() for elt in item if elt is not None]
 
     def blur(self) -> None:
         if not self.isBlurred:
@@ -26,14 +28,12 @@ class Output:
         if self.wallpaper: # not all outputs have wallpaper
             try:
                 subprocess.run([
-                    'ogurictl',
-                    'output', self.name,
-                    '--image', path,
-                    '--filter', self.settings['filter'],
-                    '--anchor', self.settings['anchor'],
-                    '--scaling-mode', self.settings['scaling-mode']
+                    'swww', 'img',
+                    '--outputs', self.name,
+                    *self.opts,
+                    path
                 ])
                 logging.info('Changed output %s wallpaper to %s' % (self.name, path))
             except:
-                logging.error('Could not set wallpaper, ensure oguri is installed')
+                logging.error('Could not set wallpaper, ensure swww is installed')
                 exit()

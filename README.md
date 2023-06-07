@@ -27,12 +27,12 @@ pip install --user .
 ### Dependencies
 + `python-i3ipc`: build dependency for communicating with Sway
 + `ImageMagick`: used to generate the blurred wallpaper
-+ `oguri`: used to set the wallpaper [without displaying a gray screen for a split second](https://github.com/swaywm/sway/issues/3693)
++ `swww: used to set the wallpaper (https://github.com/WillPower3309/swayblur/issues/16)
 
 ## Usage
 **In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
 
-**swayblur does not spawn oguri at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec oguri` occurs before swayblur is executed!**
+**swayblur does not spawn swww at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec swww init` occurs before swayblur is executed!**
 
 `swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH] [-v] [--verbose]`
 
@@ -40,18 +40,28 @@ pip install --user .
 | ------ | ----------- |
 | `-b`, `--blur`        | blur strength (default: 20, min: 5, max: 100)                |
 | `-a`, `--animate`     | animation duration (default: 1, min: 1, max: 20)             |
-| `-c`, `--config-path` | oguri config path (default: $XDG\_CONFIG\_HOME/oguri/config) |
+| `-c`, `--config-path` | config path (default: $XDG\_CONFIG\_HOME/swayblur/config) |
 |       `--verbose`     | prints additional information                                |
 | `-v`, `--version`     | show program's version number and exit                       |
 | `-h`, `--help`        | show the help message and exit                               |
 
 ## Configuration
-Since swayblur requires `oguri`, it reads its config file: `~/.config/oguri/config`. I personally use the below config, it's about as minimal as you can get:
+Swayblur reads a config file in `~/.config/swayblur/config`.
+
+Each section title follows the name `[output <OUTPUT>]` and configures the
+given output.
+
+The output name `*` will match any output not specified elsewhere in the file. To find your output names, consult your compositor's manual.
+
+The key `image` must be present and its value must be your wallpaper.
+
+The other keys are all available options for `swww img`, with leading dashes, and
+without value for flags without arguments.
+
+I personally use the below config, it's about as minimal as you can get:
 
 ```
 [output *]
 image=PATH_TO_YOUR_WALLPAPER
-filter=nearest
-scaling-mode=fill
-anchor=center
+--transition-step=255
 ```
