@@ -21,8 +21,8 @@ def parseArgs() -> bool:
             help='The blur strength (default: %(default)d, min: {}, max: {})'.format(BLUR_MIN, BLUR_MAX))
     parser.add_argument('-a', '--animate', type=int, default=1,
             help='Animation duration (default: %(default)d, min: {}, max: {})'.format(ANIMATE_MIN, ANIMATE_MAX))
-    parser.add_argument('-c', '--config-path', type=str, default=paths.DEFAULT_OGURI_DIR,
-            help='Path to the oguri configuration file to use (default: %(default)s)')
+    parser.add_argument('-c', '--config-path', type=str, default=paths.DEFAULT_DIR,
+            help='Path to the configuration file to use (default: %(default)s)')
     parser.add_argument('-v', '--version', action='version',
             version=f'%(prog)s {__version__}')
     parser.add_argument('--verbose', action='store_true',
@@ -37,14 +37,14 @@ def parseArgs() -> bool:
     if args.animate > args.blur:
         parser.error('Unable to run swayblur, animate value %d is greater than blur value %d' % (args.animate, args.blur))
     if not paths.exists(args.config_path):
-        parser.error('Unable to run swayblur, oguri config %s not found' % (args.config_path))
+        parser.error('Unable to run swayblur, config %s not found' % (args.config_path))
 
     return args
 
 
-# parse the oguri config
+# parse the config
 def parseConfig(configPath: str) -> dict:
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(allow_no_value=True)
     config.read(configPath)
 
     # init outputs to their defaults
@@ -52,10 +52,6 @@ def parseConfig(configPath: str) -> dict:
     for output in i3ipc.Connection().get_outputs():
         outputSettings[output.name] = {
             'image': '',
-            'filter': '',
-            'anchor': '',
-            'scaling-mode': 'fill',
-            'is-blurred': False
         }
 
     # iterate through each output in the config
@@ -114,7 +110,7 @@ def main() -> None:
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
 
-    # parse oguri config
+    # parse config
     outputConfigs = parseConfig(args.config_path)
 
     # clear cache if the blurStrength / animationDuration have been changed since last run

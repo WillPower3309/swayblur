@@ -1,7 +1,7 @@
 import pathlib
 import shutil
 
-DEFAULT_OGURI_DIR = pathlib.Path.home() / '.config/oguri/config'
+DEFAULT_DIR = pathlib.Path.home() / '.config/swayblur/config'
 
 CACHE_DIR = pathlib.Path.home() / '.cache/swayblur'
 CACHE_VALIDATION_FILE = CACHE_DIR / 'settings.json'

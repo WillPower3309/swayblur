@@ -59,11 +59,7 @@ class BlurManager:
                 name,
                 cachedImage,
                 [paths.framePath(imageHash, frame) for frame in animationFrames],
-                {
-                    'filter': outputCfg['filter'] ,
-                    'anchor': outputCfg['anchor'],
-                    'scaling-mode': outputCfg['scaling-mode'],
-                }
+                outputCfg,
             )
 
             # check if new wallpaper must be generated
