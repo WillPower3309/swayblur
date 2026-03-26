@@ -28,12 +28,12 @@ class Output:
         if self.wallpaper: # not all outputs have wallpaper
             try:
                 subprocess.run([
-                    'swww', 'img',
+                    'awww', 'img',
                     '--outputs', self.name,
                     *self.opts,
                     path
                 ])
                 logging.info('Changed output %s wallpaper to %s' % (self.name, path))
             except:
-                logging.error('Could not set wallpaper, ensure swww is installed')
+                logging.error('Could not set wallpaper, ensure awww is installed')
                 exit()
