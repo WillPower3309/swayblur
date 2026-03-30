@@ -27,7 +27,7 @@ pip install --user .
 ### Dependencies
 + `python-i3ipc`: build dependency for communicating with Sway
 + `ImageMagick`: used to generate the blurred wallpaper
-+ `awww`: used to set the wallpaper (https://github.com/WillPower3309/swayblur/issues/16)
++ `awww`: used to set the wallpaper
 
 ## Usage
 **In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
