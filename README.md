@@ -27,12 +27,12 @@ pip install --user .
 ### Dependencies
 + `python-i3ipc`: build dependency for communicating with Sway
 + `ImageMagick`: used to generate the blurred wallpaper
-+ `swww: used to set the wallpaper (https://github.com/WillPower3309/swayblur/issues/16)
++ `awww`: used to set the wallpaper (https://github.com/WillPower3309/swayblur/issues/16)
 
 ## Usage
 **In order for the script to run as expected, your sway config should not set any wallpaper. Remove the `output * bg PATH` line.**
 
-**swayblur does not spawn swww at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec swww init` occurs before swayblur is executed!**
+**swayblur does not spawn awww at launch. If spawning swayblur with a sway config via `exec`, ensure that `exec awww-daemon` occurs before swayblur is executed!**
 
 `swayblur [-h] [-b BLUR] [-a ANIMATE] [-c CONFIG-PATH] [-v] [--verbose]`
 
@@ -55,7 +55,7 @@ The output name `*` will match any output not specified elsewhere in the file. T
 
 The key `image` must be present and its value must be your wallpaper.
 
-The other keys are all available options for `swww img`, with leading dashes, and
+The other keys are all available options for `awww img`, with leading dashes, and
 without value for flags without arguments.
 
 I personally use the below config, it's about as minimal as you can get:
